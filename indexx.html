@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UDABOL - Sistema de Orientación Universitaria</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+        #top-navbar {
+            height: 60px;
+            background-color: #002244;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            z-index: 2000;
+            flex-shrink: 0;
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .badge-udabol {
+            background-color: #ffcc00;
+            color: #002244;
+            font-weight: bold;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+        }
+        .nav-title {
+            overflow: hidden;
+        }
+        .nav-title h1 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .nav-title p {
+            margin: 2px 0 0 0;
+            font-size: 11px;
+            color: #a0c4ff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .btn-top {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+        .btn-top:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            border-color: #ffcc00;
+        }
+        .btn-top.active-todo {
+            background-color: #ffcc00;
+            color: #002244;
+            border-color: #ffcc00;
+        }
+
+        #main-container {
+            display: flex;
+            flex-grow: 1;
+            height: calc(100vh - 60px);
+            height: calc(100dvh - 60px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 320px;
+            background-color: #ffffff;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            z-index: 1500;
+            overflow-y: auto;
+            padding: 18px;
+            box-sizing: border-box;
+            transition: transform 0.25s ease;
+        }
+        #sidebar.arrastrando {
+            transition: none;
+        }
+        .sidebar-header-mobile {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .btn-cerrar-sidebar {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .edificios-quick-panel {
+            background-color: #f4f8fb;
+            border: 1px solid #d6e4f0;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 14px;
+        }
+        .edificios-quick-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #003366;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .edificios-quick-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .btn-edificio-quick {
+            background-color: #002244;
+            color: #ffffff;
+            border: 1.5px solid #002244;
+            border-radius: 6px;
+            padding: 7px 4px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            line-height: 1.25;
+            transition: all 0.15s ease;
+        }
+        .btn-edificio-quick small {
+            display: block;
+            font-size: 9.5px;
+            font-weight: normal;
+            color: #ffcc00;
+            margin-top: 2px;
+        }
+        .btn-edificio-quick:hover,
+        .btn-edificio-quick.activo {
+            background-color: #ffcc00;
+            color: #002244;
+            border-color: #002244;
+        }
+        .btn-edificio-quick:hover small,
+        .btn-edificio-quick.activo small {
+            color: #002244;
+            font-weight: bold;
+        }
+
+        #sidebar h3 {
+            color: #003366;
+            font-size: 17px;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+        #sidebar p {
+            color: #555;
+            font-size: 13px;
+            margin-bottom: 12px;
+            margin-top: 0;
+        }
+        input[type="text"], button.action-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #1b6ca8;
+            box-shadow: 0 0 5px rgba(27, 108, 168, 0.3);
+        }
+        .btn-buscar {
+            background-color: #1b6ca8;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .btn-buscar:hover {
+            background-color: #003366;
+        }
+        .btn-reset {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        .btn-reset:hover {
+            background-color: #219653;
+        }
+        .ayuda-busqueda {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-top: 4px;
+            margin-bottom: 0;
+        }
+
+        #edge-swipe-zone {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 100%;
+            z-index: 1300;
+        }
+
+        #btn-toggle-menu {
+            display: none;
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1200;
+            background-color: #002244;
+            color: #ffcc00;
+            border: 2px solid #ffcc00;
+            padding: 12px 22px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .route-info-panel {
+            margin-top: 18px;
+            border-top: 1px solid #eee;
+            padding-top: 14px;
+        }
+        .route-info-panel h4 {
+            color: #003366;
+            font-size: 14px;
+            margin: 0 0 10px 0;
+        }
+        .metrics-grid {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .metric-card {
+            flex: 1;
+            background-color: #f4f8fb;
+            border: 1px solid #d6e4f0;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        .metric-value {
+            display: block;
+            font-size: 16px;
+            font-weight: bold;
+            color: #003366;
+        }
+        .metric-label {
+            display: block;
+            font-size: 11px;
+            color: #555;
+            margin-top: 3px;
+        }
+
+        .building-list-container {
+            margin-top: 10px;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+            position: relative;
+        }
+        .building-list-container h4 {
+            color: #003366;
+            font-size: 13px;
+            margin: 0 0 8px 0;
+        }
+        .aula-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .floor-item-wrapper {
+            position: relative;
+        }
+        .aula-list-item {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: #222;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+        .aula-list-item:hover {
+            background-color: #e8f2fa;
+            border-color: #1b6ca8;
+        }
+        .aula-list-item.active-item {
+            background-color: #003366;
+            color: #ffffff;
+            border-color: #003366;
+            font-weight: bold;
+        }
+        .aula-list-item.active-item small {
+            color: #ffcc00;
+        }
+        .piso-flecha-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background-color: rgba(0, 51, 102, 0.1);
+            color: #003366;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.15s, color 0.15s;
+        }
+        .piso-flecha-btn:hover {
+            background-color: #ffcc00;
+            color: #002244;
+        }
+        .aula-list-item.active-item .piso-flecha-btn {
+            background-color: rgba(255, 255, 255, 0.18);
+            color: #ffcc00;
+        }
+        .aula-list-item.active-item .piso-flecha-btn:hover {
+            background-color: #ffcc00;
+            color: #002244;
+        }
+
+        .piso-aulas-popover {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            border: 2px solid #003366;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 -6px 18px rgba(0, 34, 68, 0.28);
+            z-index: 1700;
+        }
+        .piso-aulas-popover.abierto {
+            display: block;
+        }
+        .popover-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e1e8ef;
+            padding-bottom: 5px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #003366;
+        }
+        .popover-close {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 10px;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .popover-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            max-height: 210px;
+            overflow-y: auto;
+        }
+        .popover-section-label {
+            width: 100%;
+            font-size: 10.5px;
+            font-weight: bold;
+            color: #8b0000;
+            background-color: #fdf2f2;
+            border-left: 3px solid #8b0000;
+            padding: 3px 6px;
+            margin-top: 4px;
+            border-radius: 2px;
+        }
+        .popover-aula-chip {
+            background-color: #eef5fc;
+            color: #002244;
+            border: 1px solid #bfd7ed;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+        .popover-aula-chip:hover {
+            background-color: #ffcc00;
+            border-color: #002244;
+            color: #002244;
+        }
+
+        @media (max-width: 768px) {
+            .nav-title p {
+                display: none;
+            }
+            .nav-title h1 {
+                font-size: 14px;
+            }
+            #sidebar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 85%;
+                max-width: 320px;
+                height: 100%;
+                transform: translateX(0);
+            }
+            #sidebar.oculto-movil {
+                transform: translateX(-105%);
+            }
+            .sidebar-header-mobile {
+                display: flex;
+            }
+            #edge-swipe-zone {
+                display: block;
+            }
+            #btn-toggle-menu {
+                display: block;
+            }
+        }
+
+        .campus-overview-label {
+            background-color: rgba(15, 30, 50, 0.92);
+            color: #ffffff;
+            font-weight: bold;
+            padding: 3px 7px;
+            border-radius: 4px;
+            border: 1.5px solid #ffcc00;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+            font-size: 10px;
+            text-align: center;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        .campus-overview-label:hover {
+            background-color: #ffcc00;
+            color: #002244;
+            transform: scale(1.1);
+            z-index: 9999 !important;
+        }
+
+        .building-floors-card {
+            background-color: rgba(15, 30, 50, 0.95);
+            color: #ffffff;
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 2px solid #ffcc00;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.7);
+            font-size: 10px;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .building-floors-title {
+            color: #ffcc00;
+            font-weight: bold;
+            font-size: 10.5px;
+            border-bottom: 1px solid rgba(255, 204, 0, 0.4);
+            padding-bottom: 2px;
+            margin-bottom: 3px;
+            text-align: center;
+        }
+        .floor-pill {
+            display: block;
+            padding: 2px 4px;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #fff;
+            font-weight: bold;
+            transition: background-color 0.15s;
+        }
+        .floor-pill:hover {
+            background-color: #ffcc00;
+            color: #002244;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-modal-box {
+            background-color: white;
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            max-width: 320px;
+            width: 85%;
+            border: 3px solid #ffcc00;
+        }
+        .qr-modal-box h3 {
+            color: #002244;
+            margin-top: 5px;
+            font-size: 20px;
+        }
+        .qr-modal-box p {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .qr-box {
+            background: #f9f9f9;
+            border: 2px dashed #ccc;
+            padding: 12px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .qr-box img {
+            width: 170px;
+            height: 170px;
+            object-fit: contain;
+        }
+        .qr-btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-qr-action {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
+            border: none;
+        }
+        .btn-descargar-qr {
+            background-color: #002244;
+            color: white;
+        }
+        .btn-descargar-qr:hover {
+            background-color: #1b6ca8;
+        }
+        .btn-cerrar-qr {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        .btn-cerrar-qr:hover {
+            background-color: #d0d0d0;
+        }
+
+        .help-modal-box {
+            background-color: white;
+            border-radius: 16px;
+            max-width: 420px;
+            width: 90%;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 3px solid #ffcc00;
+        }
+        .help-header {
+            background: linear-gradient(135deg, #002244, #8b0000);
+            color: white;
+            padding: 16px 20px 20px 20px;
+            text-align: center;
+        }
+        .help-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .btn-volver-ayuda {
+            background-color: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .btn-volver-ayuda:hover {
+            background-color: #ffcc00;
+            color: #002244;
+            border-color: #ffcc00;
+        }
+        .help-badge {
+            background-color: #ffcc00;
+            color: #002244;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            display: inline-block;
+        }
+        .help-header h2 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+        }
+        .help-header p {
+            margin: 0;
+            font-size: 12px;
+            color: #ffd;
+        }
+        .help-body {
+            padding: 20px;
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+        .help-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .help-icon {
+            background-color: #002244;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .help-step-text h4 {
+            margin: 0 0 3px 0;
+            font-size: 14px;
+            color: #002244;
+        }
+        .help-step-text p {
+            margin: 0;
+            font-size: 12px;
+            color: #555;
+        }
+
+        .btn-guia-campus {
+            width: 100%;
+            background-color: #ffcc00;
+            color: #002244;
+            border: none;
+            padding: 9px 12px;
+            border-radius: 7px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .guia-campus-panel {
+            display: none;
+            margin-top: 8px;
+            background-color: #f4f8fb;
+            border: 1px solid #c9ddf0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #1f2d3d;
+        }
+        .guia-campus-panel.abierto {
+            display: block;
+        }
+        .guia-campus-panel p {
+            margin: 4px 0;
+        }
+
+        .help-input-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .help-input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+        .btn-ir-directo {
+            background-color: #8b0000;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-ir-directo:hover {
+            background-color: #a00;
+        }
+        .help-footer-btn {
+            background-color: #002244;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 14px;
+            border-radius: 8px;
+        }
+        .help-footer-btn:hover {
+            background-color: #1b6ca8;
+        }
+
+        @keyframes dashMove {
+            to {
+                stroke-dashoffset: -24;
+            }
+        }
+        .ruta-animada {
+            animation: dashMove 1s linear infinite;
+        }
+
+        .custom-entrada-label {
+            background-color: #ffcc00;
+            color: #000000;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 2px solid #003366;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            font-size: 12px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        #map {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="top-navbar">
+        <div class="nav-brand">
+            <div class="badge-udabol">UDABOL</div>
+            <div class="nav-title">
+                <h1>Campus Sacaba - Mapa GPS</h1>
+                <p>Ubicación de Aulas, Pisos y Laboratorios</p>
+            </div>
+        </div>
+        <div class="nav-buttons">
+            <button class="btn-top" onclick="mostrarQR()">📱 QR</button>
+            <button class="btn-top active-todo" onclick="activarVistaTodoElCampus()">🗺️ Todo</button>
+            <button class="btn-top" onclick="mostrarAyuda()">❓ Ayuda</button>
+        </div>
+    </div>
+
+    <div id="qr-modal" class="modal-overlay" onclick="cerrarModalFuera(event, 'qr-modal')">
+        <div class="qr-modal-box">
+            <h3>📱 Escanea el Mapa</h3>
+            <p>Apunta con la cámara de tu celular para abrir el Mapa GPS de UDABOL Campus Sacaba.</p>
+            <div class="qr-box">
+                <img id="qr-img-src" src="" alt="Código QR Institucional">
+            </div>
+            <div class="qr-btn-group">
+                <button class="btn-qr-action btn-descargar-qr" onclick="window.open(document.getElementById('qr-img-src').src, '_blank')">⬇️ Ver / Guardar</button>
+                <button class="btn-qr-action btn-cerrar-qr" onclick="cerrarQR()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal-overlay" onclick="cerrarModalFuera(event, 'help-modal')" style="display: flex;">
+        <div class="help-modal-box">
+            <div class="help-header">
+                <div class="help-top-bar">
+                    <button type="button" class="btn-volver-ayuda" onclick="cerrarAyuda()">← Volver</button>
+                    <div class="help-badge">BIENVENIDO A UDABOL</div>
+                    <span style="width: 54px;"></span>
+                </div>
+                <h2>Campus Universitario Sacaba</h2>
+                <p>Encuentra rápidamente tus aulas, laboratorios, oficinas administrativas y rutas de acceso en tiempo real.</p>
+            </div>
+            <div class="help-body">
+                <div class="help-step">
+                    <div class="help-icon">🔍</div>
+                    <div class="help-step-text">
+                        <h4>1. Busca tu aula o servicio</h4>
+                        <p>Escribe el código de tu aula (ej. G-12, TS-20, A-1, D-1, CC-2) o el piso que necesites.</p>
+                    </div>
+                </div>
+                <div class="help-step">
+                    <div class="help-icon">🛤️</div>
+                    <div class="help-step-text">
+                        <h4>2. Sigue tu ruta iluminada</h4>
+                        <p>El mapa resaltará tu destino y te mostrará el camino peatonal desde la entrada.</p>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-guia-campus" onclick="alternarGuiaCampus()">
+                    <span>🗺️ ¿Cómo buscar en el campus?</span>
+                    <span id="flecha-guia-campus">▼</span>
+                </button>
+                <div id="guia-campus-panel" class="guia-campus-panel">
+                    <p><strong>Edificios:</strong> <code>Edificio 1</code> (Nuevo), <code>Edificio 2</code> (Planta Baja - G y Aulas G), <code>Edificio 3</code> (Antiguo)</p>
+                    <p><strong>Aulas y cómputo:</strong> <code>A-1</code>, <code>D-1</code>, <code>G-12</code>, <code>C-1</code>, <code>CC-2</code></p>
+                    <p><strong>Edificio 1 (Nuevo):</strong> <code>piso-1</code> o <code>TS-20</code></p>
+                    <p><strong>Edificio 3 (Antiguo):</strong> <code>antiguo-piso1</code>, <code>CS-4</code>, <code>quirofano 1</code> o <code>antiguo piso 6</code></p>
+                    <p><strong>Servicios y deportes:</strong> <code>caja</code>, <code>biblioteca</code>, <code>jefatura</code>, <code>fotocopiadora</code>, <code>capilla</code>, <code>cancha</code></p>
+                </div>
+
+                <div class="help-input-group">
+                    <input type="text" id="modal-search-input" placeholder="¿A qué aula vas hoy? Ej. TS-20, A-1, D-1..." onkeypress="verificarEnterModal(event)">
+                    <button class="btn-ir-directo" onclick="buscarDesdeModal()">Ir directo</button>
+                </div>
+
+                <button class="help-footer-btn" onclick="cerrarAyuda()">🗺️ Explorar Mapa Completo</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="edge-swipe-zone"></div>
+        <button id="btn-toggle-menu" onclick="abrirSidebarMovil()">🔍 Buscar Aula / Ver Lista</button>
+
+        <div id="sidebar">
+            <div class="sidebar-header-mobile">
+                <span style="font-weight: bold; color: #002244; font-size: 13px;">Menú de Búsqueda</span>
+                <button class="btn-cerrar-sidebar" onclick="cerrarSidebarMovil()">✕ Ver Mapa</button>
+            </div>
+
+            <div class="edificios-quick-panel">
+                <div class="edificios-quick-title">🏢 Edificios</div>
+                <div class="edificios-quick-grid">
+                    <button type="button" class="btn-edificio-quick" id="btn-edif-1" onclick="seleccionarEdificioRapido('Edificio Nuevo', 'pb')">
+                        Edificio 1
+                        <small>Nuevo</small>
+                    </button>
+                    <button type="button" class="btn-edificio-quick" id="btn-edif-2" onclick="seleccionarEdificioRapido('Edificio 2', 'edif2pbg')">
+                        Edificio 2
+                        <small>PB-G / Aulas G</small>
+                    </button>
+                    <button type="button" class="btn-edificio-quick" id="btn-edif-3" onclick="seleccionarEdificioRapido('Edificio Antiguo', 'antiguo')">
+                        Edificio 3
+                        <small>Antiguo</small>
+                    </button>
+                </div>
+            </div>
+
+            <h3>¿A dónde deseas ir?</h3>
+            <p>Escribe el lugar (Ej: g12, g16, piso1, c1...)</p>
+            
+            <input type="text" id="destination-input" placeholder="Ej. g12, g16, piso1, c1..." oninput="verificarBorrado(event)" onkeypress="verificarEnter(event)">
+            <p class="ayuda-busqueda">Presiona Enter o haz clic en Buscar</p>
+
+            <button class="action-btn btn-buscar" onclick="buscarYMarcarRuta()">BUSCAR</button>
+            <button class="action-btn btn-reset" onclick="activarVistaTodoElCampus()">VER TODO EL CAMPUS</button>
+
+            <div class="route-info-panel" id="route-info-panel">
+                <h4>Información del Recorrido</h4>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="metric-value" id="metric-distancia">-- m</span>
+                        <span class="metric-label">Distancia</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="metric-tiempo">-- seg</span>
+                        <span class="metric-label">Tiempo caminando</span>
+                    </div>
+                </div>
+
+                <div class="building-list-container" id="building-list-container">
+                    <h4 id="building-list-title">Aulas del Edificio / Bloque</h4>
+                    <ul class="aula-list" id="building-aula-list">
+                        <li style="font-size: 12px; color: #777;">Busca un aula o edificio para ver su listado aquí.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const entradaCoord = [-17.390664, -66.069032];
+        const campusCenter = [-17.390750, -66.068550];
+
+        const map = L.map('map').setView(campusCenter, 19);
+
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 21,
+            maxNativeZoom: 19,
+            minZoom: 15
+        }).addTo(map);
+
+        const entradaIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div class="custom-entrada-label">🚪 Entrada Principal</div>',
+            iconSize: [140, 32],
+            iconAnchor: [70, 16]
+        });
+
+        L.marker(entradaCoord, { icon: entradaIcon }).addTo(map)
+            .bindPopup("<b>ENTRADA A LA UNIVERSIDAD</b>");
+
+        const sidebarEl = document.getElementById('sidebar');
+        const edgeSwipeZone = document.getElementById('edge-swipe-zone');
+
+        function cerrarSidebarMovil() {
+            sidebarEl.classList.remove('arrastrando');
+            sidebarEl.style.transform = '';
+            sidebarEl.classList.add('oculto-movil');
+            setTimeout(() => { map.invalidateSize(); }, 260);
+        }
+
+        function abrirSidebarMovil() {
+            sidebarEl.classList.remove('arrastrando');
+            sidebarEl.style.transform = '';
+            sidebarEl.classList.remove('oculto-movil');
+        }
+
+        let touchStartX = 0;
+        let touchCurrentX = 0;
+        let gestandoCerrar = false;
+
+        sidebarEl.addEventListener('touchstart', (e) => {
+            if (window.innerWidth > 768) return;
+            touchStartX = e.touches[0].clientX;
+            touchCurrentX = touchStartX;
+            gestandoCerrar = true;
+            sidebarEl.classList.add('arrastrando');
+        }, { passive: true });
+
+        sidebarEl.addEventListener('touchmove', (e) => {
+            if (!gestandoCerrar || window.innerWidth > 768) return;
+            touchCurrentX = e.touches[0].clientX;
+            const deltaX = Math.min(0, touchCurrentX - touchStartX);
+            sidebarEl.style.transform = `translateX(${deltaX}px)`;
+        }, { passive: true });
+
+        sidebarEl.addEventListener('touchend', () => {
+            if (!gestandoCerrar || window.innerWidth > 768) return;
+            gestandoCerrar = false;
+            sidebarEl.classList.remove('arrastrando');
+            const deltaX = touchCurrentX - touchStartX;
+            sidebarEl.style.transform = '';
+            if (deltaX < -65) {
+                cerrarSidebarMovil();
+            }
+        });
+
+        let edgeStartX = 0;
+        let edgeCurrentX = 0;
+        let gestandoAbrir = false;
+
+        edgeSwipeZone.addEventListener('touchstart', (e) => {
+            if (window.innerWidth > 768 || !sidebarEl.classList.contains('oculto-movil')) return;
+            edgeStartX = e.touches[0].clientX;
+            edgeCurrentX = edgeStartX;
+            gestandoAbrir = true;
+        }, { passive: true });
+
+        edgeSwipeZone.addEventListener('touchmove', (e) => {
+            if (!gestandoAbrir) return;
+            edgeCurrentX = e.touches[0].clientX;
+        }, { passive: true });
+
+        edgeSwipeZone.addEventListener('touchend', () => {
+            if (!gestandoAbrir) return;
+            gestandoAbrir = false;
+            if (edgeCurrentX - edgeStartX > 45) {
+                abrirSidebarMovil();
+            }
+        });
+
+        const capaVistaGeneral = L.layerGroup();
+
+        function actualizarQR() {
+            const urlPublica = "https://hasllengar-alt.github.io/Udabol-Mapa/";
+            const destinoQR = window.location.href.includes("github.io")
+                ? window.location.href
+                : urlPublica;
+            document.getElementById('qr-img-src').src = `https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encodeURIComponent(destinoQR)}`;
+        }
+        function mostrarQR() {
+            actualizarQR();
+            document.getElementById('qr-modal').style.display = 'flex';
+        }
+        function cerrarQR() {
+            document.getElementById('qr-modal').style.display = 'none';
+        }
+        function mostrarAyuda() {
+            document.getElementById('help-modal').style.display = 'flex';
+        }
+        function cerrarAyuda() {
+            document.getElementById('help-modal').style.display = 'none';
+            cerrarSidebarMovil();
+        }
+        function cerrarModalFuera(event, modalId) {
+            if (event.target.id === modalId) {
+                document.getElementById(modalId).style.display = 'none';
+            }
+        }
+        function alternarGuiaCampus() {
+            const panel = document.getElementById('guia-campus-panel');
+            const flecha = document.getElementById('flecha-guia-campus');
+            panel.classList.toggle('abierto');
+            flecha.textContent = panel.classList.contains('abierto') ? '▲' : '▼';
+        }
+        function verificarEnterModal(event) {
+            if (event.key === "Enter") {
+                buscarDesdeModal();
+            }
+        }
+        function buscarDesdeModal() {
+            const val = document.getElementById('modal-search-input').value.trim();
+            if (val) {
+                document.getElementById('destination-input').value = val;
+                cerrarAyuda();
+                buscarYMarcarRuta();
+            }
+        }
+
+        const edificioNuevoPoly = [
+            [-17.3902404, -66.0685498], [-17.3903218, -66.0685701], 
+            [-17.3903737, -66.0685923], [-17.3903994, -66.0684902], 
+            [-17.3904220, -66.0684973], [-17.3904432, -66.0684176], 
+            [-17.3904397, -66.0684112], [-17.3904448, -66.0683958], 
+            [-17.3904510, -66.0683982], [-17.3904621, -66.0683656], 
+            [-17.3904568, -66.0683595], [-17.3904835, -66.0682975], 
+            [-17.3904866, -66.0682117], [-17.3904984, -66.0681801], 
+            [-17.3904907, -66.0681764], [-17.3904943, -66.0681598], 
+            [-17.3905120, -66.0680999], [-17.3904591, -66.0680882], 
+            [-17.3904639, -66.0680448], [-17.3904859, -66.0680581], 
+            [-17.3904966, -66.0680400], [-17.3905198, -66.0680489], 
+            [-17.3905270, -66.0680035], [-17.3904491, -66.0679812], 
+            [-17.3904350, -66.0680410], [-17.3903477, -66.0680226]
+        ];
+        const edificioNuevoRuta = [
+            [-17.3906711, -66.0690487], [-17.3907686, -66.0688916], 
+            [-17.3903925, -66.0686508], [-17.3904163, -66.0686092], 
+            [-17.3903957, -66.0685949]
+        ];
+
+        const edificioAntiguoPoly = [
+            [-17.3910887, -66.0683248], [-17.3911631, -66.0682109], 
+            [-17.3911506, -66.0681875], [-17.3909766, -66.0680682], 
+            [-17.3909697, -66.0680657], [-17.3907879, -66.0679470], 
+            [-17.3907139, -66.0680418], [-17.3907380, -66.0680628], 
+            [-17.3907300, -66.0680808], [-17.3907270, -66.0680927], 
+            [-17.3910887, -66.0683248]
+        ];
+        const edificioAntiguoRuta = [
+            [-17.3906776, -66.0690517], [-17.3909193, -66.0686445], 
+            [-17.3911047, -66.0687634], [-17.3912239, -66.0681779], 
+            [-17.3910007, -66.0680248], [-17.3909903, -66.0680419]
+        ];
+
+        const canchaPoly = [
+            [-17.3907826, -66.0678798], [-17.3905646, -66.0677927], 
+            [-17.3905188, -66.0679280], [-17.3907236, -66.0680257], 
+            [-17.3907826, -66.0678798]
+        ];
+        const canchaRuta = [
+            [-17.3906800, -66.0690497], [-17.3909180, -66.0686469], 
+            [-17.3911030, -66.0687643], [-17.3912225, -66.0681777], 
+            [-17.3908063, -66.0678994], [-17.3908225, -66.0678617], 
+            [-17.3907272, -66.0678300], [-17.3907256, -66.0678444]
+        ];
+
+        const aulasGRutaPiso1 = [
+            [-17.39067670060937, -66.06904613304972],
+            [-17.39083559209741, -66.06879387079925],
+            [-17.39056778408101, -66.06862316576976],
+            [-17.39065456215798, -66.06848035445334],
+            [-17.39057547166107, -66.06842951600993],
+            [-17.39061546500352, -66.06836376796683],
+            [-17.39064765780622, -66.06838435215829],
+            [-17.39067487945833, -66.06832803150047],
+            [-17.39071710020933, -66.06834995816865]
+        ];
+
+        const aulasGRutaPiso2 = [
+            [-17.39067670060937, -66.06904613304972],
+            [-17.39083559209741, -66.06879387079925],
+            [-17.39056778408101, -66.06862316576976],
+            [-17.39065456215798, -66.06848035445334],
+            [-17.39057547166107, -66.06842951600993],
+            [-17.39061546500352, -66.06836376796683],
+            [-17.39064765780622, -66.06838435215829],
+            [-17.39067487945833, -66.06832803150047],
+            [-17.39071240266217, -66.0683488681106]
+        ];
+
+        const rutaA1 = [
+            [-17.3906829, -66.0690513], [-17.3907094, -66.0690103], 
+            [-17.3908287, -66.0690761], [-17.3908541, -66.0690322], [-17.3908450, -66.0690265]
+        ];
+        const polyA1 = [
+            [-17.3907252, -66.0690187], [-17.3908390, -66.0690856], 
+            [-17.3908787, -66.0690126], [-17.3907630, -66.0689494], [-17.3907252, -66.0690187]
+        ];
+
+        const rutaA2 = [
+            [-17.3906826, -66.0690521], [-17.3907094, -66.0690103], 
+            [-17.3908296, -66.0690765], [-17.3908913, -66.0689667], [-17.3908803, -66.0689605]
+        ];
+        const polyA2 = [
+            [-17.3907630, -66.0689494], [-17.3908788, -66.0690109], 
+            [-17.3909221, -66.0689320], [-17.3908064, -66.0688679], [-17.3907630, -66.0689494]
+        ];
+
+        const rutaMarketing = [
+            [-17.3906827, -66.0690531], [-17.3908376, -66.0687951], 
+            [-17.3909463, -66.0688650], [-17.3909285, -66.0688980], [-17.3909188, -66.0688922]
+        ];
+        const polyMarketing = [
+            [-17.3908070, -66.0688680], [-17.3909225, -66.0689318], 
+            [-17.3909731, -66.0688386], [-17.3908610, -66.0687708], [-17.3908070, -66.0688680]
+        ];
+
+        const rutaFotocopiadora = [
+            [-17.3906797, -66.0690508], [-17.3908676, -66.0687356], [-17.3908756, -66.0687407]
+        ];
+        const polyFotocopiadora = [
+            [-17.3908484, -66.0687519], [-17.3910044, -66.0688517], 
+            [-17.3910275, -66.0688161], [-17.3908713, -66.0687169], [-17.3908484, -66.0687519]
+        ];
+
+        const rutaCapilla = [
+            [-17.3906793, -66.0690517], [-17.3909026, -66.0686769], [-17.3909095, -66.0686814]
+        ];
+        const polyCapilla = [
+            [-17.3910269, -66.0688157], [-17.3910803, -66.0687304], 
+            [-17.3909249, -66.0686271], [-17.3908712, -66.0687157], [-17.3910269, -66.0688157]
+        ];
+
+        const rutaBiblioteca = [
+            [-17.39067889783407, -66.06905132848399],
+            [-17.39091790821491, -66.06864568421275],
+            [-17.39080381839536, -66.06856678808458],
+            [-17.39086034300719, -66.0684800869207]
+        ];
+        const polyBiblioteca = [
+            [-17.3909712955917, -66.06853543874216],
+            [-17.39102113998576, -66.06845219841428],
+            [-17.39086041284346, -66.06834539205015],
+            [-17.39080764548959, -66.06843478977139],
+            [-17.3909712955917, -66.06853543874216]
+        ];
+
+        const rutaCaja = [
+            [-17.39067889783407, -66.06905132848399],
+            [-17.39091790821491, -66.06864568421275],
+            [-17.39080381839536, -66.06856678808458],
+            [-17.39083651165918, -66.0685233513328]
+        ];
+        const polyCaja = [
+            [-17.39083294843419, -66.06856312097116],
+            [-17.39088290156474, -66.06848427739534],
+            [-17.39084984187423, -66.0684614462951],
+            [-17.39079759151897, -66.06854412527473],
+            [-17.39083294843419, -66.06856312097116]
+        ];
+
+        const rutaGefatura = [
+            [-17.39067880582085, -66.06905129976091],
+            [-17.39083300597897, -66.06879284484994],
+            [-17.39056206528437, -66.06862187009237],
+            [-17.39055895618616, -66.06862083985423],
+            [-17.39064814985894, -66.06847605815469],
+            [-17.39050261935, -66.06838325239238],
+            [-17.39053358874811, -66.06833629566914]
+        ];
+        const polyGefatura = [
+            [-17.39056263170808, -66.06833473854819],
+            [-17.39063552658721, -66.06821023855647],
+            [-17.39058866204862, -66.0681726907539],
+            [-17.39051676691765, -66.06831005829748],
+            [-17.39056263170808, -66.06833473854819]
+        ];
+
+        const baseDatosAulas = {
+            // Bloque Académico A
+            "a1": { edificio: "Bloque Académico A", nombre: "AULA A-1", polyCoords: polyA1, rutaCoords: rutaA1, punto: [-17.3908462, -66.0690269], descripcion: "Aula A-1 del Campus" },
+            "a2": { edificio: "Bloque Académico A", nombre: "AULA-A2", polyCoords: polyA2, rutaCoords: rutaA2, punto: [-17.3908802, -66.0689614], descripcion: "Bloque A - Aula A2" },
+            "marketing": { edificio: "Bloque Académico A", nombre: "MARKETING E INFORMACIONES", polyCoords: polyMarketing, rutaCoords: rutaMarketing, punto: [-17.3909178, -66.0688913], descripcion: "Área de Marketing e Informaciones" },
+
+            // Centro de Cómputo
+            "cc1": { edificio: "Centro de Cómputo", nombre: "AULA-CC1", polyCoords: [[-17.3907663, -66.0688725], [-17.3908307, -66.0687525], [-17.3907697, -66.0687146], [-17.3907031, -66.0688339]], rutaCoords: [[-17.3906801, -66.0690516], [-17.3908331, -66.0687922], [-17.3907933, -66.0687681], [-17.3907885, -66.0687762]], descripcion: "Centro de Cómputo - Aula CC1" },
+            "cc2": { edificio: "Centro de Cómputo", nombre: "AULA-CC2", polyCoords: [[-17.3907031, -66.0688334], [-17.3907698, -66.0687152], [-17.3907143, -66.0686804], [-17.3906431, -66.0687985]], rutaCoords: [[-17.3906784, -66.0690502], [-17.3908329, -66.0687916], [-17.3907378, -66.0687327], [-17.3907326, -66.0687407]], descripcion: "Centro de Cómputo - Aula CC2" },
+            "cc3": { edificio: "Centro de Cómputo", nombre: "AULA-CC3", polyCoords: [[-17.3906538, -66.0686452], [-17.3905855, -66.0687628], [-17.3906433, -66.0687974], [-17.3907142, -66.0686798]], rutaCoords: [[-17.3906797, -66.0690511], [-17.3908329, -66.0687917], [-17.3906766, -66.0686948], [-17.3906712, -66.0687037]], descripcion: "Centro de Cómputo - Aula CC3" },
+            "cc4": { edificio: "Centro de Cómputo", nombre: "AULA-CC4", polyCoords: [[-17.3905850, -66.0687618], [-17.3906538, -66.0686452], [-17.3905820, -66.0686043], [-17.3905142, -66.0687204]], rutaCoords: [[-17.3906797, -66.0690523], [-17.3908329, -66.0687928], [-17.3906134, -66.0686548], [-17.3906061, -66.0686641]], descripcion: "Centro de Cómputo - Aula CC4" },
+
+            // Bloque C
+            "c1": { edificio: "Bloque C", nombre: "AULA-C1", polyCoords: [[-17.3904089, -66.0689095], [-17.3902975, -66.0688497], [-17.3902617, -66.0689186], [-17.3903700, -66.0689804]], rutaCoords: [[-17.3906720, -66.0690491], [-17.3907700, -66.0688899], [-17.3905010, -66.0687211], [-17.3903794, -66.0689394], [-17.3903710, -66.0689354]], descripcion: "Aula C1" },
+            "c2": { edificio: "Bloque C", nombre: "AULA-C2", polyCoords: [[-17.3904434, -66.0688497], [-17.3903315, -66.0687876], [-17.3902973, -66.0688500], [-17.3904081, -66.0689090]], rutaCoords: [[-17.3906715, -66.0690491], [-17.3907697, -66.0688899], [-17.3905013, -66.0687211], [-17.3904145, -66.0688752], [-17.3904073, -66.0688706]], descripcion: "Aula C2" },
+            "c3": { edificio: "Bloque C", nombre: "AULA-C3", polyCoords: [[-17.3904419, -66.0688481], [-17.3904780, -66.0687836], [-17.3903618, -66.0687094], [-17.3903492, -66.0687298], [-17.3903609, -66.0687378], [-17.3903319, -66.0687875]], rutaCoords: [[-17.3906719, -66.0690493], [-17.3907705, -66.0688906], [-17.3905011, -66.0687211], [-17.3904500, -66.0688103], [-17.3904419, -66.0688058]], descripcion: "Aula C3" },
+            "c4": { edificio: "Bloque C", nombre: "AULA-C4", polyCoords: [[-17.3905067, -66.0687340], [-17.3903894, -66.0686608], [-17.3903621, -66.0687100], [-17.3904788, -66.0687843]], rutaCoords: [[-17.3906716, -66.0690493], [-17.3907708, -66.0688903], [-17.3905006, -66.0687207], [-17.3904848, -66.0687489], [-17.3904781, -66.0687446]], descripcion: "Aula C4" },
+            
+            // Bloque D
+            "d1": { edificio: "D Aulas", nombre: "AULA-D1", polyCoords: [[-17.3906450, -66.0684935], [-17.3905366, -66.0684288], [-17.3905166, -66.0684598], [-17.3906268, -66.0685259]], rutaCoords: [[-17.3906723, -66.0690485], [-17.3907697, -66.0688891], [-17.3905023, -66.0687217], [-17.3906316, -66.0685059], [-17.3906269, -66.0685030]], descripcion: "Aula D1" },
+            "d2": { edificio: "D Aulas", nombre: "AULA-D2", polyCoords: [[-17.3904967, -66.0684904], [-17.3906070, -66.0685565], [-17.3906256, -66.0685255], [-17.3905163, -66.0684592]], rutaCoords: [[-17.3906714, -66.0690489], [-17.3907699, -66.0688904], [-17.3905028, -66.0687211], [-17.3906123, -66.0685381], [-17.3906075, -66.0685346]], descripcion: "Aula D2" },
+            "d3": { edificio: "D Aulas", nombre: "AULA-D3", polyCoords: [[-17.3906075, -66.0685563], [-17.3904972, -66.0684902], [-17.3904737, -66.0685290], [-17.3905859, -66.0685933]], rutaCoords: [[-17.3906723, -66.0690486], [-17.3907691, -66.0688903], [-17.3905024, -66.0687214], [-17.3905925, -66.0685707], [-17.3905859, -66.0685669]], descripcion: "Aula D3" },
+            "d4": { edificio: "D Aulas", nombre: "AULA-D4", polyCoords: [[-17.3905857, -66.0685929], [-17.3904742, -66.0685282], [-17.3904343, -66.0685907], [-17.3905481, -66.0686566]], rutaCoords: [[-17.3906706, -66.0690491], [-17.3907703, -66.0688905], [-17.3905026, -66.0687213], [-17.3905617, -66.0686222], [-17.3905552, -66.0686182]], descripcion: "Aula D4" },
+            "d5": { edificio: "D Aulas", nombre: "AULA-D5", polyCoords: [[-17.3904103, -66.0686324], [-17.3905244, -66.0686968], [-17.3905485, -66.0686564], [-17.3904339, -66.0685904]], rutaCoords: [[-17.3906720, -66.0690492], [-17.3907702, -66.0688893], [-17.3905025, -66.0687213], [-17.3905303, -66.0686744], [-17.3905225, -66.0686698]], descripcion: "Aula D5" },
+
+            // Edificio 2 (Planta Baja - G y Aulas G por piso)
+            "edif2pbg": {
+                edificio: "Edificio 2",
+                nombre: "EDIFICIO 2 - PLANTA BAJA - G",
+                pisoCorto: "Planta Baja - G (Bloque B)",
+                punto: [-17.39071710020933, -66.06834995816865],
+                rutaCoords: aulasGRutaPiso1,
+                descripcion: "<b>PLANTA BAJA — EDIFICIO ACADÉMICO BLOQUE \"B\"</b><br><br><b>IZQUIERDA:</b><br>- Mantenimiento<br>- Aula - G 11<br>- Ficheros<br>- Biblioteca<br>- Laboratorio de Computación<br>- Laboratorio de Computación<br>- Biblioteca Lectura<br>- Audicentro - 6<br>- Biblioteca Virtual<br>- Direc. Regional de Lengua<br>- Almacenes<br>- Depósito - 1<br>- Depósito - 2<br>- Depósito<br><br><b>DERECHA:</b><br>- Laboratorio Física<br>- Depósito<br>- Dep. Física<br>- Dep. Electr.<br>- Depósito<br>- Laboratorio Química<br>- Laboratorio Electricidad<br>- Depósito<br>- Sala de Reuniones<br>- Jefaturas de Carreras<br>- Tesorería Regional<br>- Contabilidad<br>- Cajas<br>- Cajas<br>- Sala de Espera",
+                subItems: [
+                    { seccion: "IZQUIERDA" },
+                    "Mantenimiento",
+                    "Aula - G 11",
+                    "Ficheros",
+                    "Biblioteca",
+                    "Laboratorio de Computación (1)",
+                    "Laboratorio de Computación (2)",
+                    "Biblioteca Lectura",
+                    "Audicentro - 6",
+                    "Biblioteca Virtual",
+                    "Direc. Regional de Lengua",
+                    "Almacenes",
+                    "Depósito - 1",
+                    "Depósito - 2",
+                    "Depósito (Izq.)",
+                    { seccion: "DERECHA" },
+                    "Laboratorio Física",
+                    "Depósito (Der. 1)",
+                    "Dep. Física",
+                    "Dep. Electr.",
+                    "Depósito (Der. 2)",
+                    "Laboratorio Química",
+                    "Laboratorio Electricidad",
+                    "Depósito (Der. 3)",
+                    "Sala de Reuniones",
+                    "Jefaturas de Carreras",
+                    "Tesorería Regional",
+                    "Contabilidad",
+                    "Cajas (1)",
+                    "Cajas (2)",
+                    "Sala de Espera"
+                ],
+                soloListaPisos: true
+            },
+            "edif2piso1": {
+                edificio: "Edificio 2",
+                nombre: "EDIFICIO 2 - PISO 1",
+                pisoCorto: "Piso 1 (10 Aulas G)",
+                punto: [-17.3907450, -66.0683300],
+                rutaCoords: aulasGRutaPiso1,
+                descripcion: "Edificio 2 - Piso 1 (G-15, G-10, G-4, G-2, G-3, G-5, G-9, G-8, G-6, G-7)",
+                subItems: ["g15", "g10", "g4", "g2", "g3", "g5", "g9", "g8", "g6", "g7"],
+                soloListaPisos: true
+            },
+            "edif2piso2": {
+                edificio: "Edificio 2",
+                nombre: "EDIFICIO 2 - PISO 2",
+                pisoCorto: "Piso 2 (5 Aulas G)",
+                punto: [-17.3906710, -66.0682870],
+                rutaCoords: aulasGRutaPiso2,
+                descripcion: "Edificio 2 - Piso 2 (G-12, G-16, G-17, G-18, G-19)",
+                subItems: ["g12", "g16", "g17", "g18", "g19"],
+                soloListaPisos: true
+            },
+
+            // Aulas individuales del Edificio 2 - Piso 1
+            "g15": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-15", punto: [-17.39070855105229, -66.06830614314505], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-15" },
+            "g10": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-10", punto: [-17.3907373535389, -66.06823187938305], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-10" },
+            "g4": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-4", punto: [-17.39076453930659, -66.06828729877985], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-4" },
+            "g2": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-2", punto: [-17.39072867088407, -66.06825830278744], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-2" },
+            "g3": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-3", punto: [-17.39077987376361, -66.06826380440371], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-3" },
+            "g5": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-5", punto: [-17.39076025937655, -66.06833257251846], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-5" },
+            "g9": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-9", punto: [-17.39078905614208, -66.06837210087939], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-9" },
+            "g8": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-8", punto: [-17.39075735106417, -66.06843371566166], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-8" },
+            "g6": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-6", punto: [-17.39073469515711, -66.0684773832223], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-6 y G-7" },
+            "g7": { edificio: "Edificio 2", pisoPertenece: "edif2piso1", nombre: "AULA G-7", punto: [-17.39073469515711, -66.0684773832223], rutaCoords: aulasGRutaPiso1, descripcion: "Edificio 2 - Piso 1 - Aula G-6 y G-7" },
+
+            // Aulas individuales del Edificio 2 - Piso 2
+            "g12": { edificio: "Edificio 2", pisoPertenece: "edif2piso2", nombre: "AULA-G12", punto: [-17.39065566997893, -66.06829443843078], rutaCoords: aulasGRutaPiso2, descripcion: "Edificio 2 - Piso 2 - Aula G12" },
+            "g16": { edificio: "Edificio 2", pisoPertenece: "edif2piso2", nombre: "AULA-G16", punto: [-17.39066219192146, -66.06826985660943], rutaCoords: aulasGRutaPiso2, descripcion: "Edificio 2 - Piso 2 - Aula G16" },
+            "g17": { edificio: "Edificio 2", pisoPertenece: "edif2piso2", nombre: "AULA-G17", punto: [-17.39067021943604, -66.06829685715567], rutaCoords: aulasGRutaPiso2, descripcion: "Edificio 2 - Piso 2 - Aula G17" },
+            "g18": { edificio: "Edificio 2", pisoPertenece: "edif2piso2", nombre: "AULA-G18", punto: [-17.39068651822179, -66.06829951790067], rutaCoords: aulasGRutaPiso2, descripcion: "Edificio 2 - Piso 2 - Aula G18" },
+            "g19": { edificio: "Edificio 2", pisoPertenece: "edif2piso2", nombre: "AULA-G19", punto: [-17.39068196869182, -66.06827410280394], rutaCoords: aulasGRutaPiso2, descripcion: "Edificio 2 - Piso 2 - Aula G19" },
+
+            // Edificio 1 (Edificio Nuevo)
+            "pb": {
+                edificio: "Edificio Nuevo",
+                nombre: "EDIFICIO NUEVO - PLANTA BAJA",
+                pisoCorto: "Planta Baja",
+                polyCoords: edificioNuevoPoly,
+                rutaCoords: edificioNuevoRuta,
+                descripcion: "Planta Baja - Aulas Simulación TS-101 a TS-110",
+                subItems: ["TS-101", "TS-102", "TS-103", "TS-104", "TS-105", "TS-106", "TS-107", "TS-108", "TS-109", "TS-110"]
+            },
+            "piso1": {
+                edificio: "Edificio Nuevo",
+                nombre: "EDIFICIO NUEVO - PISO 1",
+                pisoCorto: "Piso 1",
+                polyCoords: edificioNuevoPoly,
+                rutaCoords: edificioNuevoRuta,
+                descripcion: "Piso 1 - Aulas TS-1 a TS-10",
+                subItems: ["TS-1", "TS-2", "TS-3", "TS-4", "TS-5", "TS-6", "TS-7", "TS-8", "TS-9", "TS-10"]
+            },
+            "piso2": {
+                edificio: "Edificio Nuevo",
+                nombre: "EDIFICIO NUEVO - PISO 2",
+                pisoCorto: "Piso 2",
+                polyCoords: edificioNuevoPoly,
+                rutaCoords: edificioNuevoRuta,
+                descripcion: "Piso 2 - Aulas TS-11 a TS-20",
+                subItems: ["TS-11", "TS-12", "TS-13", "TS-14", "TS-15", "TS-16", "TS-17", "TS-18", "TS-19", "TS-20"]
+            },
+            "piso3": {
+                edificio: "Edificio Nuevo",
+                nombre: "EDIFICIO NUEVO - PISO 3",
+                pisoCorto: "Piso 3",
+                polyCoords: edificioNuevoPoly,
+                rutaCoords: edificioNuevoRuta,
+                descripcion: "Piso 3 - Aulas TS-21 a TS-30",
+                subItems: ["TS-21", "TS-22", "TS-23", "TS-24", "TS-25", "TS-26", "TS-27", "TS-28", "TS-29", "TS-30"]
+            },
+            "piso4": {
+                edificio: "Edificio Nuevo",
+                nombre: "EDIFICIO NUEVO - PISO 4",
+                pisoCorto: "Piso 4",
+                polyCoords: edificioNuevoPoly,
+                rutaCoords: edificioNuevoRuta,
+                descripcion: "Piso 4 - Aulas TS-31 a TS-40",
+                subItems: ["TS-31", "TS-32", "TS-33", "TS-34", "TS-35", "TS-36", "TS-37", "TS-38", "TS-39", "TS-40"]
+            },
+            "piso5": {
+                edificio: "Edificio Nuevo",
+                nombre: "EDIFICIO NUEVO - PISO 5",
+                pisoCorto: "Piso 5",
+                polyCoords: edificioNuevoPoly,
+                rutaCoords: edificioNuevoRuta,
+                descripcion: "Piso 5 - Aulas TS-41 a TS-50",
+                subItems: ["TS-41", "TS-42", "TS-43", "TS-44", "TS-45", "TS-46", "TS-47", "TS-48", "TS-49", "TS-50"]
+            },
+            "auditoria": {
+                edificio: "Edificio Nuevo",
+                nombre: "EDIFICIO NUEVO - PISO 6 AUDITORIO",
+                pisoCorto: "Piso 6 - Auditorio",
+                polyCoords: edificioNuevoPoly,
+                rutaCoords: edificioNuevoRuta,
+                descripcion: "Piso 6 - Auditorio del Edificio Nuevo",
+                subItems: ["Auditorio"]
+            },
+
+            // Edificio 3 (Edificio Antiguo)
+            "antiguo": {
+                edificio: "Edificio Antiguo",
+                nombre: "EDIFICIO ANTIGUO - GENERAL",
+                pisoCorto: "General",
+                polyCoords: edificioAntiguoPoly,
+                rutaCoords: edificioAntiguoRuta,
+                descripcion: "Edificio Antiguo Principal del Campus"
+            },
+            "antiguopb": { 
+                edificio: "Edificio Antiguo", 
+                nombre: "EDIFICIO ANTIGUO - PLANTA BAJA",
+                pisoCorto: "Planta Baja",
+                polyCoords: edificioAntiguoPoly, 
+                rutaCoords: edificioAntiguoRuta, 
+                descripcion: "<b>IZQUIERDA:</b><br>- Laboratorio Química Farmacología<br>- Laboratorio de Histología<br>- Laboratorio Parasitología<br>- Fisiología<br>- Patología<br><br><b>DERECHA:</b><br>- Central Laboratorio<br>- Laboratorio Microbiología<br>- Laboratorio Morfología<br>- Anfiteatro 1<br>- Anfiteatro 2<br>- Sala de Anatomía",
+                subItems: [
+                    { seccion: "IZQUIERDA" },
+                    "Laboratorio Química Farmacología",
+                    "Laboratorio de Histología",
+                    "Laboratorio Parasitología",
+                    "Fisiología",
+                    "Patología",
+                    { seccion: "DERECHA" },
+                    "Central Laboratorio",
+                    "Laboratorio Microbiología",
+                    "Laboratorio Morfología",
+                    "Anfiteatro 1",
+                    "Anfiteatro 2",
+                    "Sala de Anatomía"
+                ]
+            },
+            "antiguopiso1": { 
+                edificio: "Edificio Antiguo", 
+                nombre: "EDIFICIO ANTIGUO - PISO 1",
+                pisoCorto: "Piso 1",
+                polyCoords: edificioAntiguoPoly, 
+                rutaCoords: edificioAntiguoRuta, 
+                descripcion: "<b>IZQUIERDA:</b><br>- Quirófano 1<br>- Quirófano 2<br>- Quirófano 3<br>- Quirófano Cirugía<br>- Odontología<br>- Sala de Espera<br>- Vest. Docentes<br><br><b>DERECHA:</b><br>- Vestuario Casilleros<br>- Caja<br>- Baños<br>- Jefatura<br>- Destil. de H2O<br>- Insumos<br>- Clínica Odontológica",
+                subItems: [
+                    { seccion: "IZQUIERDA" },
+                    "Quirófano 1",
+                    "Quirófano 2",
+                    "Quirófano 3",
+                    "Quirófano Cirugía",
+                    "Odontología",
+                    "Sala de Espera",
+                    "Vest. Docentes",
+                    { seccion: "DERECHA" },
+                    "Vestuario Casilleros",
+                    "Caja",
+                    "Baños",
+                    "Jefatura",
+                    "Destil. de H2O",
+                    "Insumos",
+                    "Clínica Odontológica"
+                ]
+            },
+            "antiguopiso2": { 
+                edificio: "Edificio Antiguo", 
+                nombre: "EDIFICIO ANTIGUO - PISO 2",
+                pisoCorto: "Piso 2",
+                polyCoords: edificioAntiguoPoly, 
+                rutaCoords: edificioAntiguoRuta, 
+                descripcion: "<b>IZQUIERDA:</b><br>- Gabinete Médico<br>- Aula CS-4<br>- Fotocopia<br>- Aula CS-3<br>- Laboratorio Microbiología<br><br><b>DERECHA:</b><br>- Depósito<br>- Baño Mujeres<br>- Baño Hombres<br>- Depósito<br>- Aula CS-6<br>- Laboratorio de Embriología - 1<br>- Almacenes Administración<br>- Recursos Humanos",
+                subItems: [
+                    { seccion: "IZQUIERDA" },
+                    "Gabinete Médico",
+                    "Aula CS-4",
+                    "Fotocopia",
+                    "Aula CS-3",
+                    "Laboratorio Microbiología",
+                    { seccion: "DERECHA" },
+                    "Depósito",
+                    "Baño Mujeres",
+                    "Baño Hombres",
+                    "Depósito",
+                    "Aula CS-6",
+                    "Laboratorio de Embriología - 1",
+                    "Almacenes Administración",
+                    "Recursos Humanos"
+                ]
+            },
+            "antiguopiso3": { 
+                edificio: "Edificio Antiguo", 
+                nombre: "EDIFICIO ANTIGUO - PISO 3",
+                pisoCorto: "Piso 3",
+                polyCoords: edificioAntiguoPoly, 
+                rutaCoords: edificioAntiguoRuta, 
+                descripcion: "<b>IZQUIERDA:</b><br>- Sala Docentes<br>- Auxiliar Mantenimiento<br>- Gabinete Fisioterapia<br>- Aula CB-1<br>- Aula CS-9<br><br><b>DERECHA:</b><br>- Depósito<br>- Depósito de Fundición<br>- Baño Mujeres<br>- Baño Hombres<br>- Laboratorio Prótesis Dental<br>- Aula CS-10<br>- Aula CS-11<br>- Gabinete Psicológico",
+                subItems: [
+                    { seccion: "IZQUIERDA" },
+                    "Sala Docentes",
+                    "Auxiliar Mantenimiento",
+                    "Gabinete Fisioterapia",
+                    "Aula CB-1",
+                    "Aula CS-9",
+                    { seccion: "DERECHA" },
+                    "Depósito",
+                    "Depósito de Fundición",
+                    "Baño Mujeres",
+                    "Baño Hombres",
+                    "Laboratorio Prótesis Dental",
+                    "Aula CS-10",
+                    "Aula CS-11",
+                    "Gabinete Psicológico"
+                ]
+            },
+            "antiguopiso4": { 
+                edificio: "Edificio Antiguo", 
+                nombre: "EDIFICIO ANTIGUO - PISO 4",
+                pisoCorto: "Piso 4",
+                polyCoords: edificioAntiguoPoly, 
+                rutaCoords: edificioAntiguoRuta, 
+                descripcion: "<b>IZQUIERDA:</b><br>- Sociedad Científica<br>- Laboratorio Embriología<br>- Aula - 422<br>- Lab. Anatomía Dental<br>- Aula CS - 14<br>- Aula CS - 13<br><br><b>DERECHA:</b><br>- Duchas<br>- Baño Mujeres<br>- Baño Hombres<br>- Aula CS - 2<br>- Aula CS - 15<br>- Gabinete de Enfermería<br>- Aula CS - 16<br>- Laboratorio Enfermería<br>- Gabinete Fisioterapia",
+                subItems: [
+                    { seccion: "IZQUIERDA" },
+                    "Sociedad Científica",
+                    "Laboratorio Embriología",
+                    "Aula - 422",
+                    "Lab. Anatomía Dental",
+                    "Aula CS - 14",
+                    "Aula CS - 13",
+                    { seccion: "DERECHA" },
+                    "Duchas",
+                    "Baño Mujeres",
+                    "Baño Hombres",
+                    "Aula CS - 2",
+                    "Aula CS - 15",
+                    "Gabinete de Enfermería",
+                    "Aula CS - 16",
+                    "Laboratorio Enfermería",
+                    "Gabinete Fisioterapia"
+                ]
+            },
+            "antiguopiso5": { 
+                edificio: "Edificio Antiguo", 
+                nombre: "EDIFICIO ANTIGUO - PISO 5",
+                pisoCorto: "Piso 5",
+                polyCoords: edificioAntiguoPoly, 
+                rutaCoords: edificioAntiguoRuta, 
+                descripcion: "<b>IZQUIERDA:</b><br>- Aula - 527<br>- Aula - 528<br>- Aula - 22<br>- Aula - 23<br>- Aula CS - 21<br>- Aula CS - 24<br><br><b>DERECHA:</b><br>- Duchas<br>- Baño Mujeres<br>- Baño Hombres<br>- Aula CS - 30<br>- Aula CS - 25<br>- Aula CS - 29<br>- Aula CS - 26<br>- Aula CS - 28<br>- Aula CS - 27",
+                subItems: [
+                    { seccion: "IZQUIERDA" },
+                    "Aula - 527",
+                    "Aula - 528",
+                    "Aula - 22",
+                    "Aula - 23",
+                    "Aula CS - 21",
+                    "Aula CS - 24",
+                    { seccion: "DERECHA" },
+                    "Duchas",
+                    "Baño Mujeres",
+                    "Baño Hombres",
+                    "Aula CS - 30",
+                    "Aula CS - 25",
+                    "Aula CS - 29",
+                    "Aula CS - 26",
+                    "Aula CS - 28",
+                    "Aula CS - 27"
+                ]
+            },
+            "antiguopiso6": { 
+                edificio: "Edificio Antiguo", 
+                nombre: "EDIFICIO ANTIGUO - PISO 6 AUDITORIO",
+                pisoCorto: "Piso 6 - Auditorio",
+                polyCoords: edificioAntiguoPoly, 
+                rutaCoords: edificioAntiguoRuta, 
+                descripcion: "Piso 6 - Auditorio del Edificio Antiguo",
+                subItems: ["Auditorio"]
+            },
+
+            // Servicios Campus
+            "fotocopiadora": { edificio: "Servicios Campus", nombre: "FOTOCOPIADORA", polyCoords: polyFotocopiadora, rutaCoords: rutaFotocopiadora, punto: [-17.3908918, -66.0687530], descripcion: "Área de Fotocopiadora del Campus" },
+            "capilla": { edificio: "Servicios Campus", nombre: "CAPILLA AUDIOVISUAL", polyCoords: polyCapilla, rutaCoords: rutaCapilla, punto: [-17.3909278, -66.0686990], descripcion: "Capilla y Área Audiovisual" },
+            "biblioteca": { edificio: "Servicios Campus", nombre: "BIBLIOTECA", polyCoords: polyBiblioteca, rutaCoords: rutaBiblioteca, punto: [-17.39090974619059, -66.06843945881585], descripcion: "Biblioteca del Campus Sacaba" },
+            "caja": { edificio: "Servicios Campus", nombre: "CAJAS", polyCoords: polyCaja, rutaCoords: rutaCaja, punto: [-17.39084038240947, -66.06852408251299], descripcion: "Área de Cajas del Campus" },
+            "gefatura": { edificio: "Servicios Campus", nombre: "JEFATURA DE CARRERA", polyCoords: polyGefatura, rutaCoords: rutaGefatura, punto: [-17.3905742283271, -66.06826914176305], descripcion: "Jefatura de Carrera del Campus" },
+
+            // Deportes
+            "cancha": { edificio: "Deportes", nombre: "CANCHA DEPORTIVA", polyCoords: canchaPoly, rutaCoords: canchaRuta, descripcion: "Cancha Deportiva del Campus Sacaba" }
+        };
+
+        const ambientesAntiguoPorPiso = {
+            "antiguopb": ["quimica", "labquimicafarmacologia", "laboratorioquimicafarmacologia", "farmacologia", "histologia", "labhistologia", "laboratoriodehistologia", "parasitologia", "labparasitologia", "laboratorioparasitologia", "fisiologia", "patologia", "centrolaboratorio", "microbiologia", "labmicrobiologia", "laboratoriomicrobiologia", "morfologia", "labmorfologia", "laboratoriomorfologia", "anfiteatro1", "anfiteatro2", "anatomia", "saladeanatomia"],
+            "antiguopiso1": ["quirofano1", "quirofano2", "quirofano3", "quirofanocirugia", "odontologia", "salaespera", "saladeespera", "vestdocentes", "vestuariocasilleros", "banos", "destilh2o", "insumos", "clinicaodontologica"],
+            "antiguopiso2": ["gabinetemedico", "cs4", "cs3", "cs6", "embriologia1", "labembriologia1", "laboratoriodeembriologia1", "almacenesadministracion", "recursoshumanos", "rrhh", "deposito", "banomujeres", "banohombres"],
+            "antiguopiso3": ["saladocentes", "mantenimiento", "auxiliarmantenimiento", "fisioterapia", "gabinetefisioterapia", "cb1", "cs9", "fundicion", "depositodefundicion", "protesisdental", "labprotesisdental", "laboratorioprotesisdental", "cs10", "cs11", "psicologico", "gabinetepsicologico"],
+            "antiguopiso4": ["sociedadcientifica", "embriologia", "laboratorioembriologia", "422", "anatomiadental", "labanatomiadental", "cs14", "cs13", "cs2", "cs15", "enfermeria", "gabinetedeenfermeria", "cs16", "laboratorioenfermeria", "labenfermeria"],
+            "antiguopiso5": ["527", "528", "22", "23", "cs21", "cs24", "cs30", "cs25", "cs29", "cs26", "cs28", "cs27", "duchas"],
+            "antiguopiso6": ["antiguopiso6", "antiguoauditorio", "piso6auditorioantiguo"]
+        };
+
+        const aliasBusqueda = {
+            "edificio1": "pb",
+            "edificionuevo": "pb",
+            "edificio2": "edif2pbg",
+            "edif2": "edif2pbg",
+            "plantabajag": "edif2pbg",
+            "pbg": "edif2pbg",
+            "edif2pbg": "edif2pbg",
+            "edificio2pbg": "edif2pbg",
+            "edificio2plantabajag": "edif2pbg",
+            "g11": "edif2pbg",
+            "audicentro6": "edif2pbg",
+            "tesoreria": "edif2pbg",
+            "tesoreriaregional": "edif2pbg",
+            "contabilidad": "edif2pbg",
+            "edif2piso1": "edif2piso1",
+            "edif2piso2": "edif2piso2",
+            "edificio2piso1": "edif2piso1",
+            "edificio2piso2": "edif2piso2",
+            "edificio3": "antiguo",
+            "edificioantiguo": "antiguo",
+            "plantabaja": "pb",
+            "auditorio": "auditoria",
+            "piso6auditorio": "auditoria",
+            "antiguoplantabaja": "antiguopb",
+            "antiguopb": "antiguopb",
+            "antiguopiso1": "antiguopiso1",
+            "antiguopiso2": "antiguopiso2",
+            "antiguopiso3": "antiguopiso3",
+            "antiguopiso4": "antiguopiso4",
+            "antiguopiso5": "antiguopiso5",
+            "antiguopiso6": "antiguopiso6",
+            "antiguoauditorio": "antiguopiso6",
+            "fotocopia": "fotocopiadora",
+            "cajas": "caja",
+            "jefatura": "gefatura",
+            "gefaturadecarrera": "gefatura",
+            "jefaturadecarrera": "gefatura",
+            "info": "marketing",
+            "informaciones": "marketing",
+            "canchadeportiva": "cancha",
+            "aulasg": "edif2piso1",
+            "g6yg7": "g6",
+            "g6y7": "g6"
+        };
+
+        Object.keys(ambientesAntiguoPorPiso).forEach((clavePiso) => {
+            ambientesAntiguoPorPiso[clavePiso].forEach((ambiente) => {
+                aliasBusqueda[ambiente] = clavePiso;
+            });
+        });
+
+        function actualizarEstadoBotonesEdificio(edificioNombre) {
+            document.getElementById('btn-edif-1').classList.toggle('activo', edificioNombre === 'Edificio Nuevo');
+            document.getElementById('btn-edif-2').classList.toggle('activo', edificioNombre === 'Edificio 2');
+            document.getElementById('btn-edif-3').classList.toggle('activo', edificioNombre === 'Edificio Antiguo');
+        }
+
+        function seleccionarEdificioRapido(edificioNombre, claveInicio) {
+            cerrarTodosLosPopoversPiso();
+            const item = baseDatosAulas[claveInicio];
+            if (!item) return;
+
+            document.getElementById('destination-input').value =
+                edificioNombre === 'Edificio Nuevo' ? 'Edificio 1' :
+                edificioNombre === 'Edificio 2' ? 'Edificio 2' : 'Edificio 3';
+
+            if (capaActualPoligono) map.removeLayer(capaActualPoligono);
+            if (capaActualRuta) map.removeLayer(capaActualRuta);
+            if (marcadorPunto) map.removeLayer(marcadorPunto);
+            if (map.hasLayer(capaVistaGeneral)) map.removeLayer(capaVistaGeneral);
+
+            capaActualRuta = L.polyline(item.rutaCoords, {
+                color: '#00ffff',
+                weight: 6,
+                opacity: 1,
+                dashArray: '12, 12',
+                className: 'ruta-animada'
+            }).addTo(map);
+
+            const metros = calcularDistanciaTotal(item.rutaCoords);
+            const tiempoTexto = formatearTiempoCaminata(metros);
+
+            document.getElementById('metric-distancia').textContent = `${metros} m`;
+            document.getElementById('metric-tiempo').textContent = tiempoTexto;
+
+            actualizarListaEdificio(edificioNombre, claveInicio);
+
+            const tituloPopup =
+                edificioNombre === 'Edificio Nuevo' ? 'EDIFICIO 1 (EDIFICIO NUEVO)' :
+                edificioNombre === 'Edificio 2' ? 'EDIFICIO 2 (PLANTA BAJA - G Y AULAS G)' :
+                'EDIFICIO 3 (EDIFICIO ANTIGUO)';
+
+            const popupContenido = `<b>${tituloPopup}</b><br><hr style="margin:5px 0;"><div style="font-size: 11px;">Selecciona un piso en la lista lateral para desplegar sus ambientes o aulas.</div><br><small>📏 Distancia: <b>${metros} m</b> | ⏱️ Tiempo: <b>${tiempoTexto}</b></small>`;
+
+            if (item.polyCoords) {
+                capaActualPoligono = L.polygon(item.polyCoords, {
+                    color: '#00ff66',
+                    fillColor: '#00ff66',
+                    fillOpacity: 0.65,
+                    weight: 3
+                }).addTo(map);
+                capaActualPoligono.bindPopup(popupContenido).openPopup();
+            } else if (item.punto) {
+                marcadorPunto = L.marker(item.punto).addTo(map);
+                marcadorPunto.bindPopup(popupContenido).openPopup();
+            }
+
+            map.fitBounds(capaActualRuta.getBounds(), { padding: [55, 55], maxZoom: 20 });
+        }
+
+        function resolverDestinoEdificio(textoOriginal, queryLimpia) {
+            const matchTS = queryLimpia.match(/^ts(\d+)$/);
+            if (matchTS) {
+                const numero = parseInt(matchTS[1], 10);
+                let claveDestino = "piso1";
+                let pisoTexto = "Piso 1";
+
+                if (numero >= 101 && numero <= 110) {
+                    claveDestino = "pb";
+                    pisoTexto = "Planta Baja";
+                } else if (numero >= 1 && numero <= 10) {
+                    claveDestino = "piso1";
+                    pisoTexto = "Piso 1";
+                } else if (numero >= 11 && numero <= 20) {
+                    claveDestino = "piso2";
+                    pisoTexto = "Piso 2";
+                } else if (numero >= 21 && numero <= 30) {
+                    claveDestino = "piso3";
+                    pisoTexto = "Piso 3";
+                } else if (numero >= 31 && numero <= 40) {
+                    claveDestino = "piso4";
+                    pisoTexto = "Piso 4";
+                } else if (numero >= 41 && numero <= 50) {
+                    claveDestino = "piso5";
+                    pisoTexto = "Piso 5";
+                }
+
+                return {
+                    clave: claveDestino,
+                    tituloAviso: `TS-${numero} (${baseDatosAulas[claveDestino].nombre})`,
+                    detalleAviso: `Ubicado en <b>${pisoTexto}</b> del <b>Edificio 1 (Nuevo)</b> (${baseDatosAulas[claveDestino].descripcion}).`
+                };
+            }
+
+            const sinPrefijoAntiguo = queryLimpia.replace(/^antiguo/, "");
+            if (aliasBusqueda[sinPrefijoAntiguo] && baseDatosAulas[aliasBusqueda[sinPrefijoAntiguo]] && baseDatosAulas[aliasBusqueda[sinPrefijoAntiguo]].edificio === "Edificio Antiguo") {
+                const claveDestino = aliasBusqueda[sinPrefijoAntiguo];
+                const pisoItem = baseDatosAulas[claveDestino];
+                return {
+                    clave: claveDestino,
+                    tituloAviso: `${textoOriginal.trim().toUpperCase()} (${pisoItem.nombre})`,
+                    detalleAviso: `Ubicado en <b>${pisoItem.nombre}</b>.<br><br>${pisoItem.descripcion}`
+                };
+            }
+
+            if (baseDatosAulas[queryLimpia]) {
+                const item = baseDatosAulas[queryLimpia];
+                return {
+                    clave: queryLimpia,
+                    tituloAviso: item.nombre,
+                    detalleAviso: item.descripcion
+                };
+            }
+
+            return null;
+        }
+
+        window.seleccionarDesdeMapa = function(clave) {
+            document.getElementById('destination-input').value = clave;
+            buscarYMarcarRuta();
+        };
+
+        function inicializarVistaGeneral() {
+            capaVistaGeneral.clearLayers();
+            const poligonosDibujados = new Set();
+
+            Object.keys(baseDatosAulas).forEach(key => {
+                const item = baseDatosAulas[key];
+
+                if (item.polyCoords && !poligonosDibujados.has(JSON.stringify(item.polyCoords))) {
+                    poligonosDibujados.add(JSON.stringify(item.polyCoords));
+                    const polyGeneral = L.polygon(item.polyCoords, {
+                        color: '#ffcc00',
+                        fillColor: '#cc0000',
+                        fillOpacity: 0.45,
+                        weight: 2
+                    });
+                    polyGeneral.on('click', () => {
+                        seleccionarDesdeMapa(key);
+                    });
+                    capaVistaGeneral.addLayer(polyGeneral);
+                }
+
+                if (item.edificio === "Edificio Nuevo" || item.edificio === "Edificio Antiguo" || item.edificio === "Edificio 2") {
+                    return;
+                }
+
+                let coordEtiqueta = item.punto;
+                if (!coordEtiqueta && item.polyCoords) {
+                    const tempPoly = L.polygon(item.polyCoords);
+                    coordEtiqueta = tempPoly.getBounds().getCenter();
+                }
+
+                if (coordEtiqueta) {
+                    const labelIcon = L.divIcon({
+                        className: 'custom-overview-wrapper',
+                        html: `<div class="campus-overview-label" onclick="seleccionarDesdeMapa('${key}')">${item.nombre}</div>`,
+                        iconSize: null
+                    });
+
+                    const markerEtiqueta = L.marker(coordEtiqueta, { icon: labelIcon });
+                    capaVistaGeneral.addLayer(markerEtiqueta);
+                }
+            });
+
+            const cardEdificioNuevoHTML = `
+                <div class="building-floors-card">
+                    <div class="building-floors-title">🏢 EDIFICIO 1 (NUEVO)</div>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('pb')">Planta Baja</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('piso1')">Piso 1</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('piso2')">Piso 2</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('piso3')">Piso 3</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('piso4')">Piso 4</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('piso5')">Piso 5</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('auditoria')">Piso 6 - Auditorio</span>
+                </div>
+            `;
+            const iconEdificioNuevo = L.divIcon({
+                className: 'custom-overview-wrapper',
+                html: cardEdificioNuevoHTML,
+                iconSize: null
+            });
+            L.marker([-17.39036, -66.06832], { icon: iconEdificioNuevo }).addTo(capaVistaGeneral);
+
+            const cardEdificio2HTML = `
+                <div class="building-floors-card">
+                    <div class="building-floors-title">🏫 EDIFICIO 2 (AULAS G)</div>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('edif2pbg')">📍 Planta Baja - G</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('edif2piso1')">📍 Piso 1 (G-15..G-7)</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('edif2piso2')">📍 Piso 2 (G-12..G-19)</span>
+                </div>
+            `;
+            const iconEdificio2 = L.divIcon({
+                className: 'custom-overview-wrapper',
+                html: cardEdificio2HTML,
+                iconSize: null
+            });
+            L.marker([-17.39072, -66.06833], { icon: iconEdificio2 }).addTo(capaVistaGeneral);
+
+            const cardEdificioAntiguoHTML = `
+                <div class="building-floors-card">
+                    <div class="building-floors-title">🏛️ EDIFICIO 3 (ANTIGUO)</div>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('antiguopb')">📍 Planta Baja</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('antiguopiso1')">📍 Piso 1</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('antiguopiso2')">📍 Piso 2</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('antiguopiso3')">📍 Piso 3</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('antiguopiso4')">📍 Piso 4</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('antiguopiso5')">📍 Piso 5</span>
+                    <span class="floor-pill" onclick="seleccionarDesdeMapa('antiguopiso6')">📍 Piso 6 - Auditorio</span>
+                </div>
+            `;
+            const iconEdificioAntiguo = L.divIcon({
+                className: 'custom-overview-wrapper',
+                html: cardEdificioAntiguoHTML,
+                iconSize: null
+            });
+            L.marker([-17.39093, -66.06814], { icon: iconEdificioAntiguo }).addTo(capaVistaGeneral);
+        }
+
+        inicializarVistaGeneral();
+
+        let capaActualPoligono = null;
+        let capaActualRuta = null;
+        let marcadorPunto = null;
+
+        function calcularDistanciaTotal(coords) {
+            let distanciaTotal = 0;
+            for (let i = 0; i < coords.length - 1; i++) {
+                const puntoA = L.latLng(coords[i][0], coords[i][1]);
+                const puntoB = L.latLng(coords[i + 1][0], coords[i + 1][1]);
+                distanciaTotal += puntoA.distanceTo(puntoB);
+            }
+            return Math.round(distanciaTotal);
+        }
+
+        function formatearTiempoCaminata(metros) {
+            const segundosTotales = Math.round(metros / 1.3);
+            if (segundosTotales < 60) {
+                return `${segundosTotales} seg`;
+            } else {
+                const minutos = Math.floor(segundosTotales / 60);
+                const segundosRestantes = segundosTotales % 60;
+                return segundosRestantes > 0 ? `${minutos} min ${segundosRestantes} seg` : `${minutos} min`;
+            }
+        }
+
+        function cerrarTodosLosPopoversPiso() {
+            document.querySelectorAll('.piso-aulas-popover.abierto').forEach(p => {
+                p.classList.remove('abierto');
+            });
+            document.querySelectorAll('.piso-flecha-btn').forEach(f => {
+                f.textContent = '▼';
+            });
+        }
+
+        function seleccionarPisoDirecto(clavePiso) {
+            cerrarTodosLosPopoversPiso();
+            const item = baseDatosAulas[clavePiso];
+            if (!item) return;
+
+            document.getElementById('destination-input').value = item.nombre;
+
+            if (capaActualPoligono) map.removeLayer(capaActualPoligono);
+            if (capaActualRuta) map.removeLayer(capaActualRuta);
+            if (marcadorPunto) map.removeLayer(marcadorPunto);
+            if (map.hasLayer(capaVistaGeneral)) map.removeLayer(capaVistaGeneral);
+
+            capaActualRuta = L.polyline(item.rutaCoords, {
+                color: '#00ffff',
+                weight: 6,
+                opacity: 1,
+                dashArray: '12, 12',
+                className: 'ruta-animada'
+            }).addTo(map);
+
+            const metros = calcularDistanciaTotal(item.rutaCoords);
+            const tiempoTexto = formatearTiempoCaminata(metros);
+
+            document.getElementById('metric-distancia').textContent = `${metros} m`;
+            document.getElementById('metric-tiempo').textContent = tiempoTexto;
+
+            actualizarListaEdificio(item.edificio, clavePiso);
+
+            const popupContenido = `<b>${item.nombre}</b><br><hr style="margin:5px 0;"><div style="max-height: 150px; overflow-y: auto; font-size: 11px;">${item.descripcion}</div><br><small>📏 Distancia: <b>${metros} m</b> | ⏱️ Tiempo: <b>${tiempoTexto}</b></small>`;
+
+            if (item.polyCoords) {
+                capaActualPoligono = L.polygon(item.polyCoords, {
+                    color: '#00ff66',
+                    fillColor: '#00ff66',
+                    fillOpacity: 0.65,
+                    weight: 3
+                }).addTo(map);
+                capaActualPoligono.bindPopup(popupContenido).openPopup();
+            } else if (item.punto) {
+                marcadorPunto = L.marker(item.punto).addTo(map);
+                marcadorPunto.bindPopup(popupContenido).openPopup();
+            }
+        }
+
+        function actualizarListaEdificio(edificioNombre, claveSeleccionada) {
+            const tituloLista = document.getElementById('building-list-title');
+            const ulLista = document.getElementById('building-aula-list');
+
+            actualizarEstadoBotonesEdificio(edificioNombre);
+
+            const nombreMostrar =
+                edificioNombre === 'Edificio Nuevo' ? 'Edificio 1 (Nuevo)' :
+                edificioNombre === 'Edificio Antiguo' ? 'Edificio 3 (Antiguo)' :
+                edificioNombre;
+
+            tituloLista.textContent = `Aulas en ${nombreMostrar}`;
+            ulLista.innerHTML = '';
+
+            const claveActivaLista = (baseDatosAulas[claveSeleccionada] && baseDatosAulas[claveSeleccionada].pisoPertenece)
+                ? baseDatosAulas[claveSeleccionada].pisoPertenece
+                : claveSeleccionada;
+
+            Object.keys(baseDatosAulas).forEach(key => {
+                const item = baseDatosAulas[key];
+                if (item.edificio !== edificioNombre) return;
+                if (edificioNombre === 'Edificio 2' && !item.soloListaPisos) return;
+
+                const metrosItem = calcularDistanciaTotal(item.rutaCoords);
+                const li = document.createElement('li');
+                li.className = 'floor-item-wrapper';
+
+                const tieneSubItems = Array.isArray(item.subItems) && item.subItems.length > 0;
+
+                const btnPiso = document.createElement('div');
+                btnPiso.className = 'aula-list-item' + (key === claveActivaLista ? ' active-item' : '');
+
+                const spanNombre = document.createElement('span');
+                spanNombre.style.flex = '1';
+                spanNombre.textContent = item.nombre;
+
+                const rightBox = document.createElement('div');
+                rightBox.style.display = 'flex';
+                rightBox.style.alignItems = 'center';
+                rightBox.style.gap = '6px';
+                rightBox.style.flexShrink = '0';
+
+                const smallDist = document.createElement('small');
+                smallDist.textContent = `${metrosItem} m`;
+                rightBox.appendChild(smallDist);
+
+                btnPiso.appendChild(spanNombre);
+                btnPiso.appendChild(rightBox);
+
+                btnPiso.onclick = () => {
+                    seleccionarPisoDirecto(key);
+                };
+
+                if (tieneSubItems) {
+                    const btnTriangulo = document.createElement('span');
+                    btnTriangulo.className = 'piso-flecha-btn';
+                    btnTriangulo.id = `flecha-${key}`;
+                    btnTriangulo.title = 'Ver aulas/ambientes de este piso';
+                    btnTriangulo.textContent = '▼';
+                    rightBox.appendChild(btnTriangulo);
+
+                    const popover = document.createElement('div');
+                    popover.className = 'piso-aulas-popover';
+                    popover.id = `popover-${key}`;
+
+                    const popHeader = document.createElement('div');
+                    popHeader.className = 'popover-header';
+                    popHeader.innerHTML = `<span>Ambientes en ${item.pisoCorto || item.nombre}</span>`;
+
+                    const btnClose = document.createElement('button');
+                    btnClose.type = 'button';
+                    btnClose.className = 'popover-close';
+                    btnClose.textContent = '✕';
+                    btnClose.onclick = (e) => {
+                        e.stopPropagation();
+                        popover.classList.remove('abierto');
+                        btnTriangulo.textContent = '▼';
+                    };
+                    popHeader.appendChild(btnClose);
+                    popover.appendChild(popHeader);
+
+                    const grid = document.createElement('div');
+                    grid.className = 'popover-grid';
+
+                    item.subItems.forEach((subEntry) => {
+                        if (typeof subEntry === 'object' && subEntry.seccion) {
+                            const labelSec = document.createElement('div');
+                            labelSec.className = 'popover-section-label';
+                            labelSec.textContent = `${subEntry.seccion}:`;
+                            grid.appendChild(labelSec);
+                            return;
+                        }
+
+                        const aulaObj = baseDatosAulas[subEntry];
+                        const etiquetaChip = aulaObj ? aulaObj.nombre : subEntry;
+
+                        const chip = document.createElement('button');
+                        chip.type = 'button';
+                        chip.className = 'popover-aula-chip';
+                        chip.textContent = `- ${etiquetaChip}`;
+                        chip.onclick = (e) => {
+                            e.stopPropagation();
+                            cerrarTodosLosPopoversPiso();
+                            if (key === "edif2pbg") {
+                                seleccionarPisoDirecto("edif2pbg");
+                                return;
+                            }
+                            if (subEntry === "Caja") {
+                                seleccionarPisoDirecto("antiguopiso1");
+                                return;
+                            }
+                            if (subEntry === "Auditorio" && edificioNombre === "Edificio Antiguo") {
+                                seleccionarPisoDirecto("antiguopiso6");
+                                return;
+                            }
+                            document.getElementById('destination-input').value = subEntry;
+                            buscarYMarcarRuta();
+                        };
+                        grid.appendChild(chip);
+                    });
+
+                    popover.appendChild(grid);
+                    li.appendChild(popover);
+
+                    btnTriangulo.onclick = (e) => {
+                        e.stopPropagation();
+                        const estabaAbierto = popover.classList.contains('abierto');
+                        cerrarTodosLosPopoversPiso();
+                        if (!estabaAbierto) {
+                            popover.classList.add('abierto');
+                            btnTriangulo.textContent = '▲';
+                        }
+                    };
+                }
+
+                li.appendChild(btnPiso);
+                ulLista.appendChild(li);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.floor-item-wrapper')) {
+                cerrarTodosLosPopoversPiso();
+            }
+        });
+
+        function normalizarConsulta(texto) {
+            let query = texto.trim().toLowerCase()
+                .replace(/aula[\s-]*/g, "")
+                .replace(/bloque[\s-]*/g, "")
+                .replace(/[^a-z0-9]/g, "");
+
+            if (aliasBusqueda[query]) {
+                query = aliasBusqueda[query];
+            }
+            return query;
+        }
+
+        function verificarBorrado(event) {
+            const input = event.target;
+            if (input.value.trim() === "") {
+                limpiarMapa();
+            }
+        }
+
+        function verificarEnter(event) {
+            if (event.key === "Enter") {
+                buscarYMarcarRuta();
+            }
+        }
+
+        function limpiarMapa() {
+            if (capaActualPoligono) map.removeLayer(capaActualPoligono);
+            if (capaActualRuta) map.removeLayer(capaActualRuta);
+            if (marcadorPunto) map.removeLayer(marcadorPunto);
+            if (map.hasLayer(capaVistaGeneral)) map.removeLayer(capaVistaGeneral);
+
+            actualizarEstadoBotonesEdificio('');
+            document.getElementById('metric-distancia').textContent = "-- m";
+            document.getElementById('metric-tiempo').textContent = "-- seg";
+            document.getElementById('building-list-title').textContent = "Aulas del Edificio / Bloque";
+            document.getElementById('building-aula-list').innerHTML = '<li style="font-size: 12px; color: #777;">Busca un aula o edificio para ver su listado aquí.</li>';
+            map.setView(campusCenter, 19);
+        }
+
+        function activarVistaTodoElCampus() {
+            limpiarMapa();
+            document.getElementById('destination-input').value = "";
+            capaVistaGeneral.addTo(map);
+            map.setView(campusCenter, 19);
+            cerrarSidebarMovil();
+        }
+
+        function buscarYMarcarRuta() {
+            const input = document.getElementById('destination-input');
+            const textoOriginal = input.value;
+            const query = normalizarConsulta(textoOriginal);
+
+            if (!query) {
+                limpiarMapa();
+                return;
+            }
+
+            const resultado = resolverDestinoEdificio(textoOriginal, query);
+            if (!resultado || !baseDatosAulas[resultado.clave]) {
+                alert("Lugar no encontrado. Prueba buscando: g12, g16, piso1, c1, cc1, edificio 2...");
+                return;
+            }
+
+            const claveReal = resultado.clave;
+            const item = baseDatosAulas[claveReal];
+
+            if (capaActualPoligono) map.removeLayer(capaActualPoligono);
+            if (capaActualRuta) map.removeLayer(capaActualRuta);
+            if (marcadorPunto) map.removeLayer(marcadorPunto);
+            if (map.hasLayer(capaVistaGeneral)) map.removeLayer(capaVistaGeneral);
+
+            capaActualRuta = L.polyline(item.rutaCoords, {
+                color: '#00ffff',
+                weight: 6,
+                opacity: 1,
+                dashArray: '12, 12',
+                className: 'ruta-animada'
+            }).addTo(map);
+
+            const metros = calcularDistanciaTotal(item.rutaCoords);
+            const tiempoTexto = formatearTiempoCaminata(metros);
+
+            document.getElementById('metric-distancia').textContent = `${metros} m`;
+            document.getElementById('metric-tiempo').textContent = tiempoTexto;
+
+            actualizarListaEdificio(item.edificio, claveReal);
+
+            const popupContenido = `<b>${resultado.tituloAviso}</b><br><hr style="margin:5px 0;"><div style="max-height: 150px; overflow-y: auto; font-size: 11px;">${resultado.detalleAviso}</div><br><small>📏 Distancia: <b>${metros} m</b> | ⏱️ Tiempo: <b>${tiempoTexto}</b></small>`;
+
+            if (item.polyCoords) {
+                capaActualPoligono = L.polygon(item.polyCoords, {
+                    color: '#00ff66',
+                    fillColor: '#00ff66',
+                    fillOpacity: 0.65,
+                    weight: 3
+                }).addTo(map);
+                capaActualPoligono.bindPopup(popupContenido).openPopup();
+            } else if (item.punto) {
+                marcadorPunto = L.marker(item.punto).addTo(map);
+                marcadorPunto.bindPopup(popupContenido).openPopup();
+            }
+
+            cerrarSidebarMovil();
+            setTimeout(() => {
+                map.fitBounds(capaActualRuta.getBounds(), { padding: [55, 55], maxZoom: 20 });
+            }, 310);
+        }
+    </script>
+</body>
+</html>
